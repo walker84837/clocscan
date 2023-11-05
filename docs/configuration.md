@@ -4,7 +4,7 @@ This document explains how to configure the JSON file used for specifying except
 
 ## Table of Contents
 
-  - [Code file configuration](#code-file-configuration)
+  - [Code file configuration](#file-configuration)
       - [File extensions](#extensions)
       - [What to ignore](#what-to-ignore)
           - [Folders](#folders)
@@ -27,7 +27,7 @@ For this example, the program will count lines of code in Rust, Python, and Java
 
 ### What to ignore
 
-This section explains how to exclude certain folders and files from code line counting. This is helpful for avoiding parts of your project that you don't want to include in the count, like `README.md` files, or `.gitignore`.
+This section explains how to exclude certain folders and files from code line counting. This helps avoid parts of your project that you don't want to include in the count, like `README.md` files, or `.gitignore`.
 
 #### Folders
 
