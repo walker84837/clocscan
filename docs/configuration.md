@@ -55,3 +55,5 @@ Specify the names of specific files to be ignored. The program will check if the
 ```
 
 In this example, the program will ignore files named "README.md" or "ignore\_this.py".
+
+This documentation is licensed under the GNU Free Documentation License (GFDL). these examples are licensed under the gnu general public license version 3 (gplv3).

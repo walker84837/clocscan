@@ -15,12 +15,16 @@ mod functions;
 #[derive(Debug, StructOpt)]
 struct Cli {
     /// The folder where the lines of code will be counted
-    #[structopt(parse(from_os_str))]
+    #[structopt(long = "folder", parse(from_os_str))]
     work_folder: PathBuf,
 
     /// The JSON config file for code file extensions and ignore rules
-    #[structopt(parse(from_os_str))]
+    #[structopt(short = "c", long = "config", parse(from_os_str))]
     json_config: Option<PathBuf>,
+
+    /// If this flag is present, with the value "true", it will ignore comments
+    #[structopt(long = "ignore-comments")]
+    ignore_comments: Option<bool>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -39,6 +43,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Cli::from_args();
 
     let working_dir: &str = args.work_folder.to_str().unwrap_or(".");
+
+    let should_consider_comments = match args.ignore_comments {
+        Some(true) => true,
+        Some(false) => false,
+        None => false,
+    };
 
     let path = args
         .json_config
@@ -71,9 +81,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 File::open(path).with_context(|| format!("Failed to open file: {:#?}", path))?;
             let reader = BufReader::new(file);
 
-            let lines = reader.lines().count();
-            total_lines += lines;
-            println!("File: {:#?}, Lines: {}", path, lines);
+            let mut lines_count = 0;
+
+            for line in reader.lines() {
+                let line_str = line?;
+
+                // Skip lines that are comments
+                if should_consider_comments && functions::is_comment_line(&line_str) {
+                    continue;
+                }
+
+                lines_count += 1;
+            }
+
+            total_lines += lines_count;
+            println!("File: {:#?}, Lines: {}", path, lines_count);
         }
 
         // Check if the path should be ignored based on folder and file rules
