@@ -1,7 +1,7 @@
 {
 	"code_file_extensions": ["rs", "c", "cpp", "h", "hpp"],
 	"ignore": {
-		"folders": ["target", "node_modules"],
+		"folders": ["target/", "node_modules/"],
 		"files": [".gitignore", "LICENSE"]
 	}
 }
