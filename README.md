@@ -54,7 +54,7 @@ I'd like to give credit to the following libraries and tools used in this projec
   - [StructOpt](https://crates.io/crates/structopt) - for command-line argument parsing in Rust.
   - [WalkDir](https://crates.io/crates/walkdir) - for recursively walking into directories.
   - [Regex](https://crates.io/crates/regex) - for matching Regex patterns in Rust.
-  - [Serde](https://crates.io/crates/serde) - for matching Regex patterns in Rust.
+  - [Serde](https://crates.io/crates/serde) - for serializing and deserializing Rust data structures efficiently and generically.
 
 ## Contact
 
