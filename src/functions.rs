@@ -12,7 +12,7 @@ pub fn is_comment_line(line: &str) -> bool {
 
     trimmed_line.starts_with("//")
         || trimmed_line.starts_with("//")
-        || trimmed_line.starts_with("#")
-        || trimmed_line.starts_with(";")
+        || trimmed_line.starts_with('#')
+        || trimmed_line.starts_with(';')
         || trimmed_line.starts_with("/*") && trimmed_line.ends_with("*/")
 }
