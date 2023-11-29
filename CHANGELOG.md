@@ -7,9 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## \[Unreleased\]
 
+  - None.
+
+## \[0.1.2\] - 2023-11-29
+
 ### Added
 
-  - Added JSON configuration for comments.
+  - Bump version (0.1.1 -\> 0.1.2)
+
+### Fixed
+
+  - Fixed typos and removed leftovers in README.md.
+
+### Changed
+
+  - Improved variable naming clarity in [main.rs](src/main.rs)
+
+### Removed
+
+  - None.
 
 ## \[0.1.1\] - 2023-11-16
 

@@ -22,7 +22,7 @@ struct Cli {
     #[structopt(short = "c", long = "config", parse(from_os_str))]
     json_config: Option<PathBuf>,
 
-    /// If this flag is present, with the value "true", it will ignore comments
+    /// If this flag is present, with the value of true, it will ignore comments
     #[structopt(long = "ignore-comments")]
     ignore_comments: Option<bool>,
 }
@@ -44,7 +44,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let working_dir: &str = args.work_folder.to_str().unwrap_or(".");
 
-    let should_consider_comments = match args.ignore_comments {
+    let should_ignore_comments = match args.ignore_comments {
         Some(true) => true,
         Some(false) => false,
         None => false,
@@ -87,7 +87,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let line_str = line?;
 
                 // Skip lines that are comments
-                if should_consider_comments && functions::is_comment_line(&line_str) {
+                if !should_ignore_comments && functions::is_comment_line(&line_str) {
                     continue;
                 }
 
