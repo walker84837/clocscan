@@ -44,7 +44,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let working_dir: &str = args.work_folder.to_str().unwrap_or(".");
 
-    let should_consider_comments = match args.ignore_comments {
+    let should_ignore_comments = match args.ignore_comments {
         Some(true) => true,
         Some(false) => false,
         None => false,
@@ -87,7 +87,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let line_str = line?;
 
                 // Skip lines that are comments
-                if should_consider_comments && functions::is_comment_line(&line_str) {
+                if !should_ignore_comments && functions::is_comment_line(&line_str) {
                     continue;
                 }
 
