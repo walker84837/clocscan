@@ -22,7 +22,7 @@ struct Cli {
     #[structopt(short = "c", long = "config", parse(from_os_str))]
     json_config: Option<PathBuf>,
 
-    /// If this flag is present, with the value "true", it will ignore comments
+    /// If this flag is present, with the value of true, it will ignore comments
     #[structopt(long = "ignore-comments")]
     ignore_comments: Option<bool>,
 }
