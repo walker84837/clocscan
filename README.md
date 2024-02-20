@@ -13,35 +13,40 @@ Documentation is in the [docs/](docs/) folder, where you can find information ab
 4.  [Acknowledgments](#acknowledgments)
 5.  [Contact](#contact)
 
-## Installation
-
-To use this program, you'll need to install Rust and its package manager, Cargo. Follow the official [Rust installation guide](https://www.rust-lang.org/tools/install) to get them set up.
-
-Once Rust and Cargo are installed, you can build and install this program using the following command:
-
-``` bash
-cargo install --path .
-```
-
-or you can also do
-
-``` bash
-cargo build --release [opts]
-```
-
 ## Usage
 
-After installing, you can use this program to get the lines of code in your project. Here's how to use it, assuming you have already set-up config.json:
+After installing, you can use this program to get the lines of code in your 
+project. Here's how to use it, assuming you have already set-up the config
+
 
 ``` bash
 ./loc-counter-rs 'directory/' --config config.json
 ```
 
-However, if you have set up some ignore settings, and you want to get rid of the "Ignoring: ..." text, you can run the program like:
+## Contributing
 
-``` bash
-./loc-counter-rs 'directory/' --config config.json | grep -vi ignoring
-```
+Contributiions are always welcome! If you feel like there is something you 
+can improve, or if you'd like to add some features:
+
+1.  Follow the [Linux kernel coding style](https://docs.kernel.org/process/coding-style.html)
+2.  Follow the [code of conduct](CODE_OF_CONDUCT.md)
+3.  Keep code formatted with
+    ``` console
+    rustfmt --edition 2021
+    ```
+    and check the code for common mistakes with
+    ``` console
+    cargo clippy
+    ```
+4.  If you feel like there is some new features to add, feel free to open an
+    issue.
+5.  It is recommended that you use Rust stable rather than Rust
+    nightly for a reliable development experience that is consistent with the
+    broader ecosystem and suitable for production. You are advised to replace 
+    all Rust nightly code in this repository with stable 
+    counterparts.
+6.  When using external libraries, it is recommended that you use lightweight 
+    options such as `ureq` instead of `reqwest`.
 
 ## License
 
@@ -51,12 +56,17 @@ This project is dual-licensed under the [MIT](LICENSE_MIT.md) or [Apache License
 
 I'd like to give credit to the following libraries and tools used in this project:
 
-  - [StructOpt](https://crates.io/crates/structopt) - for command-line argument parsing in Rust.
-  - [WalkDir](https://crates.io/crates/walkdir) - for recursively walking into directories.
-  - [Regex](https://crates.io/crates/regex) - for matching Regex patterns in Rust.
-  - [Serde](https://crates.io/crates/serde) - for serializing and deserializing Rust data structures efficiently and generically.
+  - [Clap](https://crates.io/crates/clap) - for command-line argument parsing 
+    in Rust.
+  - [WalkDir](https://crates.io/crates/walkdir) - for recursively walking 
+    into directories.
+  - [Regex](https://crates.io/crates/regex) - for matching Regex patterns in 
+    Rust.
+  - [Serde](https://crates.io/crates/serde) - for serializing and 
+    deserializing Rust data structures efficiently and generically.
 
 ## Contact
 
-If you have any questions, need further assistance, or would like to make large changes to this repository, you can contact me at <walker84837@gmail.com> or `@winlogon.exe:matrix.org` <!-- on Element Chat -->.
-
+If you have any questions, need further assistance, or would like to make
+large changes to this repository, you can contact me at
+<walker84837@gmail.com> or `@winlogon.exe:matrix.org`.
