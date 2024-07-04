@@ -1,9 +1,21 @@
 [package]
-name = "loc-counter-rs"
-version = "0.1.0"
+name = "clocscan"
+version = "0.2.0"
 edition = "2021"
+license = "Apache-2.0 OR MIT"
+categories = ["command-line-utilities"]
+keywords = ["cli", "command-line"]
+readme = "README.md"
+repository = "https://github.com/walker84837/clocscan-rs"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[profile.dev]
+debug = false
+
+[profile.release]
+strip = true
+lto = true
+overflow-checks = true
+panic = "abort"
 
 [dependencies]
 walkdir = "2.4"
@@ -14,4 +26,6 @@ serde_json = "1.0"
 serde_derive = "1.0"
 anyhow = "1.0"
 rayon = "1.8"
-prettytable-rs = "0.10.0"
+log = "0.4.22"
+prettytable = "0.10.0"
+simple_logger = "5.0.0"

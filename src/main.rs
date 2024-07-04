@@ -1,11 +1,15 @@
 use anyhow::{Context, Result};
 use clap::Parser;
+use log::{info, LevelFilter};
+use prettytable::{row, Table};
 use rayon::prelude::*;
 use regex::Regex;
 use serde_derive::Deserialize;
+use simple_logger::SimpleLogger;
 use walkdir::WalkDir;
 
 use std::{
+    collections::HashMap,
     fs::File,
     io::{BufRead, BufReader, Read},
     path::PathBuf,
@@ -23,12 +27,21 @@ struct Cli {
         help = "The JSON config file for code file extensions and ignore rules"
     )]
     config: PathBuf,
+
+    #[arg(short, long, help = "Enable logging")]
+    verbose: bool,
 }
 
 #[derive(Deserialize)]
 struct CodeFileConfig {
-    code_file_extensions: Vec<String>,
+    code_file_extensions: Vec<CodeFileExtension>,
     ignore: IgnoreConfig,
+}
+
+#[derive(Deserialize)]
+struct CodeFileExtension {
+    extension: String,
+    file_type: String,
 }
 
 #[derive(Deserialize)]
@@ -40,20 +53,38 @@ struct IgnoreConfig {
 fn main() -> Result<()> {
     let args = Cli::parse();
 
-    let binding = args.work_folder.unwrap();
-    let working_dir: &str = binding.to_str().unwrap_or(".");
+    if args.verbose {
+        SimpleLogger::new()
+            .with_level(LevelFilter::Info)
+            .init()
+            .unwrap();
+    }
+
+    info!("Logger initialized.");
+
+    let binding = match args.work_folder {
+        Some(p) => p.to_string_lossy().into_owned(),
+        None => String::from("."),
+    };
+    let working_dir = &binding;
     let path = args.config.to_string_lossy().into_owned();
     let text = read_file_contents(&path)?;
 
     let code_file_config: CodeFileConfig = serde_json::from_str(&text)
         .with_context(|| format!("Failed to parse JSON config file: {}", path))?;
 
-    let code_file_extensions = code_file_config.code_file_extensions;
+    info!("Config file loaded: {}", path);
+
+    let code_file_extensions: Vec<String> = code_file_config
+        .code_file_extensions
+        .iter()
+        .map(|ext| ext.extension.clone())
+        .collect();
     let code_file_regex =
         Regex::new(format!(".*\\.({})$", code_file_extensions.join("|")).as_str())
-            .with_context(|| "ERROR:Failed to create regex!")?;
+            .with_context(|| "ERROR: Failed to create regex!")?;
 
-    let mut total_lines = 0;
+    let mut file_stats: HashMap<String, (String, usize, usize)> = HashMap::new();
 
     for entry in WalkDir::new(working_dir)
         .into_iter()
@@ -77,8 +108,19 @@ fn main() -> Result<()> {
                 lines_count += 1;
             }
 
-            total_lines += lines_count;
-            println!("File: {}, Lines: {}", path.display(), lines_count);
+            let extension = path.extension().and_then(|ext| ext.to_str()).unwrap_or("");
+            let file_type = code_file_config
+                .code_file_extensions
+                .iter()
+                .find(|ext| ext.extension == extension)
+                .map(|ext| ext.file_type.clone())
+                .unwrap_or_default();
+
+            let entry = file_stats
+                .entry(extension.to_string())
+                .or_insert((file_type, 0, 0));
+            entry.1 += 1;
+            entry.2 += lines_count;
         }
 
         // Check if the path should be ignored based on folder and file rules
@@ -97,8 +139,7 @@ fn main() -> Result<()> {
         }
     }
 
-    // TODO: Implement printing a table containing the number of LoC
-    println!("Total lines of code: {}", total_lines);
+    print_stats(&file_stats);
     Ok(())
 }
 
@@ -114,12 +155,27 @@ pub fn read_file_contents(file_path: &str) -> Result<String> {
 
 /// Checks if a given line is a comment in various programming languages.
 pub fn is_comment_line(line: &str) -> bool {
-    let trimmed_line = line.trim();
+    let comment_patterns = ["//", "#", ";", "/*", "*/", "--"];
 
-    trimmed_line.starts_with("//")
-        || trimmed_line.starts_with("//")
-        || trimmed_line.starts_with("---")
-        || trimmed_line.starts_with('#')
-        || trimmed_line.starts_with(';')
-        || trimmed_line.starts_with("/*") && trimmed_line.ends_with("*/")
+    let trimmed_line = line.trim();
+    comment_patterns
+        .iter()
+        .any(|&pattern| trimmed_line.starts_with(pattern))
+}
+
+/// Prints the statistics in a pretty table format.
+fn print_stats(stats: &HashMap<String, (String, usize, usize)>) {
+    let mut table = Table::new();
+    table.add_row(row![
+        "Extension",
+        "File Type",
+        "Number of Files",
+        "Lines of Code"
+    ]);
+
+    for (ext, (file_type, count, lines)) in stats {
+        table.add_row(row![ext, file_type, count, lines]);
+    }
+
+    table.printstd();
 }
