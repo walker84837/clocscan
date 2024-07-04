@@ -1,0 +1,13 @@
+{
+	"code_file_extensions": [
+		{"extension": "rs", "file_type": "Rust"},
+		{"extension": "c", "file_type": "C"},
+		{"extension": "cpp", "file_type": "C++"},
+		{"extension": "h", "file_type": "C Header"},
+		{"extension": "hpp", "file_type": "C++ Header"}
+	],
+	"ignore": {
+		"folders": ["target", "node_modules"],
+		"files": [".gitignore", "LICENSE"]
+	}
+}
