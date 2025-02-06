@@ -4,7 +4,7 @@ use std::{
 };
 use thiserror::Error;
 
-/// Default config file
+/// Default config file (contents are included from the sample JSON config file)
 pub const DEFAULT_CONFIG: &str = include_str!("../docs/sample.json");
 
 /// Error enum for generic file reading
