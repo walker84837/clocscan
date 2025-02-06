@@ -8,7 +8,7 @@ Ignore**.
 
 ## Table of Contents
 
-   - [Code file extensions](#extensions)
+   - [Code file extensions](#code-file-extensions)
    - [What to ignore](#what-to-ignore)
        - [Folders](#folders)
        - [Files](#files)
@@ -65,4 +65,4 @@ filename matches one of these patterns and ignore it accordingly.
 }
 ```
 
-*This documentation is licensed under the GNU Free Documentation License (GFDL). These examples are licensed under the GNU General Public License, version 3.*
+*This documentation is licensed under the GNU Free Documentation License (GFDL). These examples are licensed under the MIT License.*

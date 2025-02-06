@@ -6,7 +6,7 @@ license = "Apache-2.0 OR MIT"
 categories = ["command-line-utilities"]
 keywords = ["cli", "command-line"]
 readme = "README.md"
-repository = "https://github.com/walker84837/clocscan-rs"
+repository = "https://github.com/walker84837/clocscan"
 
 [profile.dev]
 debug = false
