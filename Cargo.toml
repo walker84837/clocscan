@@ -6,7 +6,7 @@ license = "Apache-2.0 OR MIT"
 categories = ["command-line-utilities"]
 keywords = ["cli", "command-line"]
 readme = "README.md"
-repository = "https://github.com/walker84837/clocscan-rs"
+repository = "https://github.com/walker84837/clocscan"
 
 [profile.dev]
 debug = false
@@ -29,3 +29,4 @@ rayon = "1.8"
 log = "0.4.22"
 prettytable = "0.10.0"
 simple_logger = "5.0.0"
+thiserror = "2.0.11"

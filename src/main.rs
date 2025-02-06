@@ -1,74 +1,65 @@
+use crate::{
+    config::CodeFileConfig,
+    file_reading::{is_comment_line, read_file_contents, DEFAULT_CONFIG},
+};
 use anyhow::{Context, Result};
-use clap::Parser;
-use log::{info, LevelFilter};
+use clap::{ArgAction, Parser};
+use log::{debug, info, warn, LevelFilter};
 use prettytable::{row, Table};
 use rayon::prelude::*;
 use regex::Regex;
-use serde_derive::Deserialize;
 use simple_logger::SimpleLogger;
 use walkdir::WalkDir;
+
+mod config;
+mod file_reading;
 
 use std::{
     collections::HashMap,
     fs::File,
-    io::{BufRead, BufReader, Read},
+    io::{BufRead, BufReader},
     path::PathBuf,
 };
 
 #[derive(Parser)]
 struct Cli {
-    #[arg(help = "The folder where the lines of code will be counted")]
-    work_folder: Option<PathBuf>,
+    /// The folder where the lines of code will be counted
+    #[arg(default_value = ".")]
+    work_folder: PathBuf,
 
-    #[arg(
-        short,
-        long,
-        default_value = "config.json",
-        help = "The JSON config file for code file extensions and ignore rules"
-    )]
+    /// The JSON config file for code file extensions and ignore rules
+    #[arg(short, long, default_value = "config.json")]
     config: PathBuf,
 
-    #[arg(short, long, help = "Enable logging")]
-    verbose: bool,
-}
+    /// Use logging (-v for warn, -vv for debug logging, or none to only print errors)
+    #[arg(short, long, action = ArgAction::Count)]
+    verbose: u8,
 
-#[derive(Deserialize)]
-struct CodeFileConfig {
-    code_file_extensions: Vec<CodeFileExtension>,
-    ignore: IgnoreConfig,
-}
-
-#[derive(Deserialize)]
-struct CodeFileExtension {
-    extension: String,
-    file_type: String,
-}
-
-#[derive(Deserialize)]
-struct IgnoreConfig {
-    folders: Vec<String>,
-    files: Vec<String>,
+    /// Show how much time it took to count the lines of code
+    #[arg(short, long)]
+    show_time_elapsed: bool,
 }
 
 fn main() -> Result<()> {
     let args = Cli::parse();
 
-    if args.verbose {
-        SimpleLogger::new()
-            .with_level(LevelFilter::Info)
-            .init()
-            .unwrap();
-    }
-
-    info!("Logger initialized.");
-
-    let binding = match args.work_folder {
-        Some(p) => p.to_string_lossy().into_owned(),
-        None => String::from("."),
+    let filter = match args.verbose {
+        0 => LevelFilter::Error,
+        1 => LevelFilter::Warn,
+        2 => LevelFilter::Debug,
+        _ => panic!("Invalid option: use -v, -vv, or -vvv"),
     };
-    let working_dir = &binding;
+    SimpleLogger::new().with_level(filter).env().init().unwrap();
+
+    let working_dir = args.work_folder.to_string_lossy().into_owned();
     let path = args.config.to_string_lossy().into_owned();
-    let text = read_file_contents(&path)?;
+    let text = match std::fs::exists(&path) {
+        Ok(true) => read_file_contents(&path)?,
+        _ => {
+            warn!("Configuration file couldn't be found. Loading defaults");
+            DEFAULT_CONFIG.to_string()
+        }
+    };
 
     let code_file_config: CodeFileConfig = serde_json::from_str(&text)
         .with_context(|| format!("Failed to parse JSON config file: {}", path))?;
@@ -80,12 +71,13 @@ fn main() -> Result<()> {
         .iter()
         .map(|ext| ext.extension.clone())
         .collect();
-    let code_file_regex =
-        Regex::new(format!(".*\\.({})$", code_file_extensions.join("|")).as_str())
-            .with_context(|| "ERROR: Failed to create regex!")?;
+
+    let regex_string = format!(".*\\.({})$", code_file_extensions.join("|"));
+    let code_file_regex = Regex::new(&regex_string)?;
 
     let mut file_stats: HashMap<String, (String, usize, usize)> = HashMap::new();
 
+    info!("Going through files");
     for entry in WalkDir::new(working_dir)
         .into_iter()
         .filter_map(|entry| entry.ok())
@@ -93,10 +85,14 @@ fn main() -> Result<()> {
         let path = entry.path();
         let path_str = path.to_str().unwrap_or("");
 
-        // Check if the path is a regular file and matches the code file extensions
+        debug!(
+            "Checking if {} is a regular file and matches the code file extensions",
+            path.display()
+        );
         if path.is_file() && code_file_regex.is_match(path_str) {
             let reader = BufReader::new(File::open(path)?);
 
+            debug!("Counting lines for {}", path.display());
             let mut lines_count = 0;
             for line in reader.lines() {
                 let line_str = line?;
@@ -107,6 +103,7 @@ fn main() -> Result<()> {
 
                 lines_count += 1;
             }
+            debug!("Lines for {}: {}", path.display(), lines_count);
 
             let extension = path.extension().and_then(|ext| ext.to_str()).unwrap_or("");
             let file_type = code_file_config
@@ -124,17 +121,19 @@ fn main() -> Result<()> {
         }
 
         // Check if the path should be ignored based on folder and file rules
-        if code_file_config
+        let is_file_ignored = code_file_config
+            .ignore
+            .files
+            .par_iter()
+            .any(|file| path_str.matches(file).count() > 0);
+
+        let is_folder_ignored = code_file_config
             .ignore
             .folders
             .par_iter()
-            .any(|folder| path_str.contains(folder))
-            || code_file_config
-                .ignore
-                .files
-                .par_iter()
-                .any(|file| path_str.matches(file).count() > 0)
-        {
+            .any(|folder| path_str.contains(folder));
+
+        if is_folder_ignored || is_file_ignored {
             continue;
         }
     }
@@ -143,27 +142,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-/// Reads the contents of a file and returns them as a `String`.
-pub fn read_file_contents(file_path: &str) -> Result<String> {
-    let f = File::open(file_path)?;
-    let mut reader = BufReader::new(f);
-    let mut contents = String::new();
-    reader.read_to_string(&mut contents)?;
-
-    Ok(contents)
-}
-
-/// Checks if a given line is a comment in various programming languages.
-pub fn is_comment_line(line: &str) -> bool {
-    let comment_patterns = ["//", "#", ";", "/*", "*/", "--"];
-
-    let trimmed_line = line.trim();
-    comment_patterns
-        .iter()
-        .any(|&pattern| trimmed_line.starts_with(pattern))
-}
-
-/// Prints the statistics in a pretty table format.
+/// Print the statistics in a pretty table format.
 fn print_stats(stats: &HashMap<String, (String, usize, usize)>) {
     let mut table = Table::new();
     table.add_row(row![
