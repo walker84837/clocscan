@@ -1,5 +1,7 @@
 # ClocScan: counter of lines of code
 
+[![Rust](https://github.com/walker84837/clocscan/actions/workflows/rust.yml/badge.svg)](https://github.com/walker84837/clocscan/actions/workflows/rust.yml)
+
 ClocScan is a flexible and blazingly fast counter of lines of code. Documentation is in the [docs/](docs/) folder, where you can find information about the JSON configuration file options, and what should be put inside there.
 
 > [!WARNING]
