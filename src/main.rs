@@ -1,12 +1,14 @@
+use crate::config::CodeFileConfig;
 use anyhow::{Context, Result};
 use clap::Parser;
 use log::{info, LevelFilter};
 use prettytable::{row, Table};
 use rayon::prelude::*;
 use regex::Regex;
-use serde_derive::Deserialize;
 use simple_logger::SimpleLogger;
 use walkdir::WalkDir;
+
+mod config;
 
 use std::{
     collections::HashMap,
@@ -28,37 +30,21 @@ struct Cli {
     )]
     config: PathBuf,
 
-    #[arg(short, long, help = "Enable logging")]
+    #[arg(short, long, help = "Use info-level logging")]
     verbose: bool,
-}
-
-#[derive(Deserialize)]
-struct CodeFileConfig {
-    code_file_extensions: Vec<CodeFileExtension>,
-    ignore: IgnoreConfig,
-}
-
-#[derive(Deserialize)]
-struct CodeFileExtension {
-    extension: String,
-    file_type: String,
-}
-
-#[derive(Deserialize)]
-struct IgnoreConfig {
-    folders: Vec<String>,
-    files: Vec<String>,
 }
 
 fn main() -> Result<()> {
     let args = Cli::parse();
 
-    if args.verbose {
-        SimpleLogger::new()
-            .with_level(LevelFilter::Info)
-            .init()
-            .unwrap();
-    }
+    SimpleLogger::new()
+        .with_level(if args.verbose {
+            LevelFilter::Info
+        } else {
+            LevelFilter::Warn
+        })
+        .init()
+        .unwrap();
 
     info!("Logger initialized.");
 
