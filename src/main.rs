@@ -9,17 +9,15 @@ use log::{debug, info, warn, LevelFilter};
 use prettytable::{row, Table};
 use regex::Regex;
 use simple_logger::SimpleLogger;
-use tokio::fs;
+use tokio::{
+    fs,
+    io::{AsyncBufReadExt, BufReader},
+};
 
 mod config;
 mod file_reading;
 
-use std::{
-    collections::HashMap,
-    fs::File,
-    io::{BufRead, BufReader},
-    path::PathBuf,
-};
+use std::{collections::HashMap, path::PathBuf};
 
 use futures::stream::StreamExt;
 
@@ -109,7 +107,7 @@ async fn main() -> Result<()> {
             continue;
         }
         if path.is_file() && code_file_regex.is_match(path_str) {
-            let file = fs::File::open(path).await?;
+            let file = fs::File::open(&path).await?;
             let reader = BufReader::new(file);
             let mut lines = reader.lines();
 
