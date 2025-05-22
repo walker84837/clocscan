@@ -1,25 +1,25 @@
 use crate::{
     config::CodeFileConfig,
-    file_reading::{is_comment_line, read_file_contents, DEFAULT_CONFIG},
+    file_reading::{is_comment_line, DEFAULT_CONFIG},
 };
 use anyhow::{Context, Result};
+use async_walkdir::WalkDir;
 use clap::{ArgAction, Parser};
 use log::{debug, info, warn, LevelFilter};
 use prettytable::{row, Table};
-use rayon::prelude::*;
 use regex::Regex;
 use simple_logger::SimpleLogger;
-use walkdir::WalkDir;
+use tokio::{
+    fs,
+    io::{AsyncBufReadExt, BufReader},
+};
 
 mod config;
 mod file_reading;
 
-use std::{
-    collections::HashMap,
-    fs::File,
-    io::{BufRead, BufReader},
-    path::PathBuf,
-};
+use std::{collections::HashMap, path::PathBuf};
+
+use futures::stream::StreamExt;
 
 #[derive(Parser)]
 struct Cli {
@@ -40,7 +40,8 @@ struct Cli {
     show_time_elapsed: bool,
 }
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let args = Cli::parse();
 
     let filter = match args.verbose {
@@ -54,7 +55,7 @@ fn main() -> Result<()> {
     let working_dir = args.work_folder.to_string_lossy().into_owned();
     let path = args.config.to_string_lossy().into_owned();
     let text = match std::fs::exists(&path) {
-        Ok(true) => read_file_contents(&path)?,
+        Ok(true) => fs::read_to_string(&path).await?,
         _ => {
             warn!("Configuration file couldn't be found. Loading defaults");
             DEFAULT_CONFIG.to_string()
@@ -78,10 +79,9 @@ fn main() -> Result<()> {
     let mut file_stats: HashMap<String, (String, usize, usize)> = HashMap::new();
 
     info!("Going through files");
-    for entry in WalkDir::new(working_dir)
-        .into_iter()
-        .filter_map(|entry| entry.ok())
-    {
+    let mut entries = WalkDir::new(working_dir);
+    while let Some(entry) = entries.next().await {
+        let entry = entry?;
         let path = entry.path();
         let path_str = path.to_str().unwrap_or("");
 
@@ -89,15 +89,32 @@ fn main() -> Result<()> {
             "Checking if {} is a regular file and matches the code file extensions",
             path.display()
         );
+
+        // Check if the path should be ignored based on folder and file rules
+        let is_file_ignored = code_file_config
+            .ignore
+            .files
+            .iter()
+            .any(|file| path_str.contains(file));
+
+        let is_folder_ignored = code_file_config
+            .ignore
+            .folders
+            .iter()
+            .any(|folder| path_str.contains(folder));
+
+        if is_folder_ignored || is_file_ignored {
+            continue;
+        }
         if path.is_file() && code_file_regex.is_match(path_str) {
-            let reader = BufReader::new(File::open(path)?);
+            let file = fs::File::open(&path).await?;
+            let reader = BufReader::new(file);
+            let mut lines = reader.lines();
 
             debug!("Counting lines for {}", path.display());
             let mut lines_count = 0;
-            for line in reader.lines() {
-                let line_str = line?;
-
-                if is_comment_line(&line_str) {
+            while let Some(line) = lines.next_line().await? {
+                if is_comment_line(&line) {
                     continue;
                 }
 
@@ -118,23 +135,6 @@ fn main() -> Result<()> {
                 .or_insert((file_type, 0, 0));
             entry.1 += 1;
             entry.2 += lines_count;
-        }
-
-        // Check if the path should be ignored based on folder and file rules
-        let is_file_ignored = code_file_config
-            .ignore
-            .files
-            .par_iter()
-            .any(|file| path_str.matches(file).count() > 0);
-
-        let is_folder_ignored = code_file_config
-            .ignore
-            .folders
-            .par_iter()
-            .any(|folder| path_str.contains(folder));
-
-        if is_folder_ignored || is_file_ignored {
-            continue;
         }
     }
 
