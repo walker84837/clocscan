@@ -18,43 +18,56 @@ ClocScan is a flexible and blazingly fast counter of lines of code. Documentatio
 
 ## Usage
 
-After installing, you can use this program to get the lines of code in your project. Here's some example usage:
+After installing, you can use clocscan to get the lines of code in your project. This is the usage for most things you'll need:
 
-``` console
+```console
 ./clocscan '/path/to/directory/'
+```
+
+This is the `--help` menu in case you need more specific options:
+
+```
+Usage: clocscan [OPTIONS] [WORK_FOLDER]
+
+Arguments:
+  [WORK_FOLDER]  The folder where the lines of code will be counted [default: .]
+
+Options:
+  -c, --config <CONFIG>    The JSON config file for code file extensions and ignore rules [default: config.json]
+  -v, --verbose...         Use logging (-v for warn, -vv for debug logging, or none to only print errors)
+  -s, --show-time-elapsed  Show how much time it took to count the lines of code
+  -h, --help               Print help
 ```
 
 ## Speed
 
-I did some tests to check the speed, and I saw that due to asynchronous directory traversal, it's way faster than [`cloc`]().
-
-Running a directory traversal on [commit 7f9039c52](https://github.com/torvalds/linux/commit/7f9039c524a351c684149ecf1b3c5145a0dff2fe) the Linux kernel.
-
-Running on an AMD Ryzen 5 7600, Samsung 990 PRO M.2 SSD with 32 GB of RAM.
+As a benchmark, I did put it up against [commit 7f9039c52](https://github.com/torvalds/linux/commit/7f9039c524a351c684149ecf1b3c5145a0dff2fe) of the Linux kernel.
+I ran this test on an AMD Ryzen 5 7600, Samsung 990 PRO M.2 SSD with 32 GB of RAM.
 
 ```
 clocscan .  5.90s user 9.66s system 451% cpu 3.443 total
 cloc .  71.28s user 1.99s system 99% cpu 1:13.57 total
 ```
-Notice how clocscan uses more than one CPU core because of the async traversal.
-
-I'm not really sure how accurate the `time` command is, but this should make it "obvious" how faster it is.
+Due to asynchronous directory traversal, which uses more than one CPU core, I noticed that it's much faster than [`cloc`](https://github.com/AlDanial/cloc). I'm not sure how accurate the `time` command is, but this shows the difference in speed.
+However, this may be because it's simpler than cloc, or because my code might not be very efficient.
 
 ## Contributing
 
-Contributiions are always welcome! If you feel like there is something you can improve, or if you'd like to add some features, feel free to make a PR or open an issue!
+Contributiions are always welcome! Feel free to propose changes to improve performance, or add some features.
 
-The documentation of the code is at <https://walker84837.github.io/clocscan/>.
+If you feel like contributing and want to explore the code:
+- start from the [roadmap](#roadmap)
+- to look at the structure, docs are at <https://walker84837.github.io/clocscan/>. I try my best to document changes.
 
 ### Roadmap
 
 - [ ] Add more file types in the example config file
-- [ ] Make the output table look prettier
+- [ ] Make configuration types configurable in the JSON files
 - [ ] Add an option to just output the total lines of code and more options (for scripting purposes)
 
 ## License
 
-This project is dual-licensed under the [MIT](LICENSE_MIT.md) or [Apache License](LICENSE_APACHE.md).
+This project is dual-licensed under the [MIT](LICENSE_MIT.md) and [Apache License](LICENSE_APACHE.md), either at your choice.
 
 ## Contact
 
