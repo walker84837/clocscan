@@ -24,6 +24,22 @@ After installing, you can use this program to get the lines of code in your proj
 ./clocscan '/path/to/directory/'
 ```
 
+## Speed
+
+I did some tests to check the speed, and I saw that due to asynchronous directory traversal, it's way faster than [`cloc`]().
+
+Running a directory traversal on [commit 7f9039c52](https://github.com/torvalds/linux/commit/7f9039c524a351c684149ecf1b3c5145a0dff2fe) the Linux kernel.
+
+Running on an AMD Ryzen 5 7600, Samsung 990 PRO M.2 SSD with 32 GB of RAM.
+
+```
+clocscan .  5.90s user 9.66s system 451% cpu 3.443 total
+cloc .  71.28s user 1.99s system 99% cpu 1:13.57 total
+```
+Notice how clocscan uses more than one CPU core because of the async traversal.
+
+I'm not really sure how accurate the `time` command is, but this should make it "obvious" how faster it is.
+
 ## Contributing
 
 Contributiions are always welcome! If you feel like there is something you can improve, or if you'd like to add some features, feel free to make a PR or open an issue!
