@@ -9,5 +9,10 @@
 	"ignore": {
 		"folders": ["target", "node_modules"],
 		"files": [".gitignore", "LICENSE"]
+	},
+	"comment_patterns": {
+		"single_line": ["//", "#", ";", "--"],
+		"multi_line_start": ["/*"],
+		"multi_line_end": ["*/"]
 	}
 }
