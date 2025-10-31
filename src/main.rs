@@ -1,6 +1,6 @@
 use crate::{
     config::CodeFileConfig,
-    file_reading::{is_comment_line, DEFAULT_CONFIG},
+    file_reading::{is_comment_or_empty, DEFAULT_CONFIG},
 };
 use anyhow::{Context, Result};
 use async_walkdir::WalkDir;
@@ -113,14 +113,17 @@ async fn main() -> Result<()> {
 
             debug!("Counting lines for {}", path.display());
             let mut lines_count = 0;
+            let mut in_multiline_comment = false;
             while let Some(line) = lines.next_line().await? {
-                if is_comment_line(&line) {
+                if is_comment_or_empty(
+                    &line,
+                    &code_file_config.comment_patterns,
+                    &mut in_multiline_comment,
+                ) {
                     continue;
                 }
-
                 lines_count += 1;
             }
-            debug!("Lines for {}: {}", path.display(), lines_count);
 
             let extension = path.extension().and_then(|ext| ext.to_str()).unwrap_or("");
             let file_type = code_file_config
