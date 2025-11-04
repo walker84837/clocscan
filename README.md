@@ -41,23 +41,24 @@ Options:
 
 ## Speed
 
-As a benchmark, I did put it up against [commit 7f9039c52](https://github.com/torvalds/linux/commit/7f9039c524a351c684149ecf1b3c5145a0dff2fe) of the Linux kernel.
-I ran this test on an AMD Ryzen 5 7600, Samsung 990 PRO M.2 SSD with 32 GB of RAM.
+As a benchmark, I did put it up against [commit 8bb886cb8](https://github.com/torvalds/linux/commit/8bb886cb8f3a2811430ddb7d9838e245c57e7f7c) of the Linux kernel.
 
-```
-clocscan .  5.90s user 9.66s system 451% cpu 3.443 total
-cloc .  71.28s user 1.99s system 99% cpu 1:13.57 total
-```
-Due to asynchronous directory traversal, which uses more than one CPU core, I noticed that it's much faster than [`cloc`](https://github.com/AlDanial/cloc). I'm not sure how accurate the `time` command is, but this shows the difference in speed.
-However, this may be because it's simpler than cloc, or because my code might not be very efficient.
+I ran this test on an AMD Ryzen 5 7600, Samsung 990 PRO M.2 SSD with 32 GB of RAM. With that out of the way, here's the results:
+
+| Command | Mean [s] | Min [s] | Max [s] | Relative |
+|:---|---:|---:|---:|---:|
+| `./target/release/clocscan linux/` | 5.513 ± 0.021 | 5.476 | 5.538 | 1.00 |
+| `cloc linux/` | 78.272 ± 0.832 | 77.115 | 80.084 | 14.20 ± 0.16 |
+
+These benchmarks were run using `hyperfine`[^1] for more accurate results. `clocscan` utilizes asynchronous directory traversal, which uses multiple CPU cores, making it significantly faster performance compared to [`cloc`](https://github.com/AlDanial/cloc), but this could be improved further.
 
 ## Contributing
 
-Contributiions are always welcome! Feel free to propose changes to improve performance, or add some features.
+Contributions are always welcome! Feel free to propose changes to improve performance, or add some features.
 
 If you feel like contributing and want to explore the code:
 - start from the [roadmap](#roadmap)
-- to look at the structure, docs are at <https://walker84837.github.io/clocscan/>. I try my best to document changes.
+- to look at the structure, this repo hosts Rust docs are at <https://walker84837.github.io/clocscan/>. I try my best to document changes.
 
 ### Roadmap
 
@@ -72,3 +73,5 @@ This project is dual-licensed under the [MIT](LICENSE_MIT.md) and [Apache Licens
 ## Contact
 
 If you have any questions, need further assistance, you can contact me at `@winlogon.exe:matrix.org`.
+
+[^1]: The [hyperfine](https://github.com/sharkdp/hyperfine) command I used was `hyperfine --warmup 3 --runs 10 --export-markdown benchmark_results.md './target/release/clocscan linux/' 'cloc linux/'`
