@@ -134,7 +134,6 @@ async fn main() -> Result<()> {
     let regex_string = format!(".*\\.({})$", code_file_extensions.join("|"));
     let code_file_regex = Regex::new(&regex_string)?;
 
-    // TODO: turn key into a struct
     let mut file_stats: HashMap<String, FileTypeStats> = HashMap::new();
 
     info!("Going through files");
@@ -144,7 +143,7 @@ async fn main() -> Result<()> {
     while let Some(entry) = entries.next().await {
         let entry = entry?;
         let path = entry.path();
-        let path_str = path.to_str().unwrap_or("");
+        let path_str = path.to_str().unwrap_or_default();
 
         debug!(
             "Checking if {} is a regular file and matches the code file extensions",
@@ -197,7 +196,7 @@ async fn main() -> Result<()> {
                 .and_then(|ext| ext.to_str())
                 .unwrap_or_default();
 
-            // Get the file type from the extension
+            // Look for the file type alias from the extension in the config
             let file_type = code_file_config
                 .code_file_extensions
                 .iter()
@@ -205,7 +204,7 @@ async fn main() -> Result<()> {
                 .map(|ext| ext.file_type.clone())
                 .unwrap_or_default();
 
-            // Add the file to the stats by mutating the file_stats HashMap
+            // Add the file to the stats by mutating the entry
             file_stats
                 .entry(extension.to_string())
                 .or_insert_with(|| FileTypeStats::new(file_type))
@@ -253,18 +252,26 @@ fn print_stats(stats: &HashMap<String, FileTypeStats>) {
     table.printstd();
 }
 
-async fn load_config<P: AsRef<Path>>(path: P) -> String {
-    let result = match std::fs::exists(&path) {
-        Ok(true) => fs::read_to_string(path.as_ref()).await.ok(),
-        Ok(false) => {
-            warn!("Config file not found. Creating new default config.");
-            None
+async fn load_config<P: AsRef<Path> + std::fmt::Debug>(path: P) -> String {
+    let file_exists = std::fs::exists(&path)
+        .map_err(|e| {
+            warn!("Couldn't verify config existence at {path:?}: {e}. Using defaults.");
+            e
+        })
+        .unwrap_or(false);
+
+    let config = if file_exists {
+        match fs::read_to_string(path.as_ref()).await {
+            Ok(content) => content,
+            Err(e) => {
+                warn!("Failed to read config file {path:?}: {e}. Using defaults.");
+                DEFAULT_CONFIG.to_string()
+            }
         }
-        Err(e) => {
-            warn!("Couldn't verify config existence: {e}. Using defaults.");
-            None
-        }
+    } else {
+        warn!("Config file not found at {path:?}. Creating new default config.");
+        DEFAULT_CONFIG.to_string()
     };
 
-    result.unwrap_or_else(|| DEFAULT_CONFIG.to_string())
+    config
 }
