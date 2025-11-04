@@ -24,6 +24,31 @@ use std::{
 
 use futures::stream::StreamExt;
 
+struct FileTypeStats {
+    /// A human-readable label for this file type, e.g. "Rust Source"
+    file_type: String,
+    /// Number of files found with this extension
+    file_count: usize,
+    /// Total SLOC (source lines of code) across all those files
+    total_sloc: usize,
+}
+
+impl FileTypeStats {
+    pub fn new<S: Into<String>>(file_type: S) -> Self {
+        Self {
+            file_type: file_type.into(),
+            file_count: 0,
+            total_sloc: 0,
+        }
+    }
+
+    /// Add a single file’s line count to this type’s totals.
+    pub fn accumulate_file(&mut self, sloc: usize) {
+        self.file_count += 1;
+        self.total_sloc += sloc;
+    }
+}
+
 #[derive(Parser)]
 struct Cli {
     /// The folder where the lines of code will be counted
@@ -57,9 +82,10 @@ async fn main() -> Result<()> {
     let args = Cli::parse();
 
     let filter = match args.verbose {
-        0 => LevelFilter::Error,
-        1 => LevelFilter::Warn,
-        2 => LevelFilter::Debug,
+        0 => LevelFilter::Info,
+        1 => LevelFilter::Error,
+        2 => LevelFilter::Warn,
+        3 => LevelFilter::Debug,
         _ => panic!("Invalid option: use -v, -vv, or -vvv"),
     };
     SimpleLogger::new().with_level(filter).env().init().unwrap();
@@ -109,7 +135,7 @@ async fn main() -> Result<()> {
     let code_file_regex = Regex::new(&regex_string)?;
 
     // TODO: turn key into a struct
-    let mut file_stats: HashMap<String, (String, usize, usize)> = HashMap::new();
+    let mut file_stats: HashMap<String, FileTypeStats> = HashMap::new();
 
     info!("Going through files");
     let mut entries = WalkDir::new(working_dir);
@@ -180,17 +206,16 @@ async fn main() -> Result<()> {
                 .unwrap_or_default();
 
             // Add the file to the stats by mutating the file_stats HashMap
-            let entry = file_stats
+            file_stats
                 .entry(extension.to_string())
-                .or_insert((file_type, 0, 0));
-            entry.1 += 1;
-            entry.2 += lines_count;
+                .or_insert_with(|| FileTypeStats::new(file_type))
+                .accumulate_file(lines_count);
         }
     }
 
     // If --sloc-only: print a single number (total SLOC)
     if args.sloc_only {
-        let total_sloc: usize = file_stats.values().map(|(_, _, lines)| *lines).sum();
+        let total_sloc: usize = file_stats.values().map(|stats| stats.total_sloc).sum();
         println!("{}", total_sloc);
         return Ok(());
     }
@@ -200,7 +225,7 @@ async fn main() -> Result<()> {
 }
 
 /// Print the statistics in a pretty table format.
-fn print_stats(stats: &HashMap<String, (String, usize, usize)>) {
+fn print_stats(stats: &HashMap<String, FileTypeStats>) {
     let mut table = Table::new();
     table.add_row(row![
         "Extension",
@@ -212,11 +237,18 @@ fn print_stats(stats: &HashMap<String, (String, usize, usize)>) {
     let mut total_files = 0usize;
     let mut total_lines = 0usize;
 
-    for (ext, (file_type, count, lines)) in stats {
-        table.add_row(row![ext, file_type, count, lines]);
-        total_files += count;
-        total_lines += lines;
+    for (ext, file_stats) in stats {
+        table.add_row(row![
+            ext,
+            file_stats.file_type,
+            file_stats.file_count,
+            file_stats.total_sloc
+        ]);
+        total_files += file_stats.file_count;
+        total_lines += file_stats.total_sloc;
     }
+
+    table.add_row(row!["---", "(total)", total_files, total_lines]);
 
     table.printstd();
 }
