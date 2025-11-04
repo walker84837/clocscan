@@ -82,9 +82,9 @@ async fn main() -> Result<()> {
     let args = Cli::parse();
 
     let filter = match args.verbose {
-        0 => LevelFilter::Info,
-        1 => LevelFilter::Error,
-        2 => LevelFilter::Warn,
+        0 => LevelFilter::Error,
+        1 => LevelFilter::Warn,
+        2 => LevelFilter::Info,
         3 => LevelFilter::Debug,
         _ => panic!("Invalid option: use -v, -vv, or -vvv"),
     };
