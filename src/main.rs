@@ -67,13 +67,7 @@ async fn main() -> Result<()> {
     let working_dir = args.work_folder.to_string_lossy().into_owned();
     let path = args.config.to_string_lossy().into_owned();
 
-    // Use Path::exists to check config file presence
-    let text = if Path::new(&path).exists() {
-        fs::read_to_string(&path).await?
-    } else {
-        warn!("Configuration file couldn't be found. Loading defaults");
-        DEFAULT_CONFIG.to_string()
-    };
+    let text = load_config(&path).await;
 
     let code_file_config: CodeFileConfig = serde_json::from_str(&text)
         .with_context(|| format!("Failed to parse JSON config file: {}", path))?;
@@ -225,4 +219,20 @@ fn print_stats(stats: &HashMap<String, (String, usize, usize)>) {
     }
 
     table.printstd();
+}
+
+async fn load_config<P: AsRef<Path>>(path: P) -> String {
+    let result = match std::fs::exists(&path) {
+        Ok(true) => fs::read_to_string(path.as_ref()).await.ok(),
+        Ok(false) => {
+            warn!("Config file not found. Creating new default config.");
+            None
+        }
+        Err(e) => {
+            warn!("Couldn't verify config existence: {e}. Using defaults.");
+            None
+        }
+    };
+
+    result.unwrap_or_else(|| DEFAULT_CONFIG.to_string())
 }
