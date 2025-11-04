@@ -1,7 +1,7 @@
 use crate::config::CommentPatterns;
 
 /// Default config file (contents are included from the sample JSON config file)
-pub const DEFAULT_CONFIG: &str = include_str!("../docs/sample.json");
+pub const DEFAULT_CONFIG: &str = include_str!("../sample.json");
 
 /// Checks if a given line is a comment in various programming languages.
 pub fn is_comment_or_empty(
