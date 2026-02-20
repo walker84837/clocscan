@@ -4,7 +4,7 @@
 
 ![clocscan showcase: compiling and running](https://github.com/user-attachments/assets/508aab11-1600-452c-87ef-c4aebae35dd9)
 
-ClocScan is a flexible and blazingly fast counter of lines of code. Documentation is in the [docs/](docs/) folder, where you can find information about the JSON configuration file options, and what should be put inside there.
+ClocScan is a flexible and blazingly fast counter of lines of code. See [sample.json](sample.json) for an example configuration with supported file types and ignore rules.
 
 > [!WARNING]
 > This project is still in development.
