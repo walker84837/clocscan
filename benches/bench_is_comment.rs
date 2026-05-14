@@ -30,11 +30,12 @@ pub fn is_comment_or_empty_benchmark(c: &mut Criterion) {
         let mut in_multiline = false;
         b.iter(|| {
             for line in &test_cases {
-                std::hint::black_box(is_comment_or_empty(
+                let (_, new_state) = std::hint::black_box(is_comment_or_empty(
                     line,
                     &comment_patterns,
-                    &mut in_multiline,
+                    in_multiline,
                 ));
+                in_multiline = new_state;
             }
         });
     });
