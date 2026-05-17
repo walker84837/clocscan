@@ -1,2 +1,2 @@
+pub mod analyzer;
 pub mod config;
-pub mod file_reading;

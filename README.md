@@ -60,7 +60,7 @@ If you feel like contributing and want to explore the code:
 
 - [ ] Add more file types in the example config file
 - [ ] Make configuration types configurable in the JSON files
-- [ ] Add an option to just output the total lines of code and more options (for scripting purposes)
+- [x] Add an option to just output the total lines of code and more options (for scripting purposes)
 
 ## License
 
