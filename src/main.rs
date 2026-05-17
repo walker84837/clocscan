@@ -1,5 +1,5 @@
 use crate::{
-    analyzer::{DEFAULT_CONFIG, is_comment_or_empty},
+    analyzer::{CommentMatchers, DEFAULT_CONFIG, is_comment_or_empty},
     config::CodeFileConfig,
 };
 use anyhow::{Context, Result};
@@ -7,7 +7,6 @@ use async_walkdir::WalkDir;
 use clap::{ArgAction, Parser};
 use log::{LevelFilter, debug, info, warn};
 use prettytable::{Table, row};
-use regex::Regex;
 use simple_logger::SimpleLogger;
 use tokio::{
     fs,
@@ -17,7 +16,10 @@ use tokio::{
 mod analyzer;
 mod config;
 
-use std::{collections::HashMap, path::PathBuf};
+use std::{
+    collections::{HashMap, HashSet},
+    path::PathBuf,
+};
 
 use futures::stream::StreamExt;
 
@@ -98,8 +100,9 @@ async fn main() -> Result<()> {
     info!("Config file loaded: {}", path);
 
     let code_file_extensions = resolve_extensions(args.extensions, &code_file_config);
+    let extension_set: HashSet<String> = code_file_extensions.iter().cloned().collect();
 
-    if code_file_extensions.is_empty() {
+    if extension_set.is_empty() {
         warn!("No extensions provided (via CLI or config). Nothing to count.");
         if args.sloc_only {
             println!("0");
@@ -107,9 +110,7 @@ async fn main() -> Result<()> {
         return Ok(());
     }
 
-    let regex_string = build_extension_regex(&code_file_extensions);
-    let code_file_regex = Regex::new(&regex_string)?;
-
+    let comment_matchers = CommentMatchers::new(code_file_config.comment_patterns.clone());
     let mut file_stats: HashMap<String, FileTypeStats> = HashMap::new();
 
     info!("Going through files");
@@ -124,64 +125,57 @@ async fn main() -> Result<()> {
             continue;
         };
 
-        debug!(
-            "Checking if {} is a regular file and matches the code file extensions",
-            path.display()
-        );
-
-        let is_file_ignored = code_file_config
-            .ignore
-            .files
-            .iter()
-            .any(|file| path_str.contains(file));
-
-        let is_folder_ignored = code_file_config
+        let is_ignored = code_file_config
             .ignore
             .folders
             .iter()
-            .any(|folder| path_str.contains(folder));
+            .any(|f| path_str.contains(f))
+            || code_file_config
+                .ignore
+                .files
+                .iter()
+                .any(|f| path_str.contains(f));
 
-        if is_folder_ignored || is_file_ignored {
+        if is_ignored {
             continue;
         }
 
-        if path.is_file() && code_file_regex.is_match(path_str) {
-            let file = fs::File::open(&path).await?;
-            let reader = BufReader::new(file);
-            let mut lines = reader.lines();
-
-            debug!("Counting lines for {}", path.display());
-            let mut lines_count = 0;
-            let mut in_multiline_comment = false;
-            while let Some(line) = lines.next_line().await? {
-                let (is_comment, new_state) = is_comment_or_empty(
-                    &line,
-                    &code_file_config.comment_patterns,
-                    in_multiline_comment,
-                );
-                in_multiline_comment = new_state;
-                if is_comment {
-                    continue;
-                }
-                lines_count += 1;
-            }
-
+        if path.is_file() {
             let extension = path
                 .extension()
                 .and_then(|ext| ext.to_str())
                 .unwrap_or_default();
 
-            let file_type = code_file_config
-                .code_file_extensions
-                .iter()
-                .find(|ext| ext.extension == extension)
-                .map(|ext| ext.file_type.clone())
-                .unwrap_or_default();
+            if extension_set.contains(extension) {
+                let file = fs::File::open(&path).await?;
+                let reader = BufReader::new(file);
+                let mut lines = reader.lines();
 
-            file_stats
-                .entry(extension.to_string())
-                .or_insert_with(|| FileTypeStats::new(file_type))
-                .accumulate_file(lines_count);
+                debug!("Counting lines for {}", path.display());
+                let mut lines_count = 0;
+                let mut in_multiline_comment = false;
+                while let Some(line) = lines.next_line().await? {
+                    let (is_comment, new_state) =
+                        is_comment_or_empty(&line, &comment_matchers, in_multiline_comment);
+                    in_multiline_comment = new_state;
+                    if is_comment {
+                        continue;
+                    }
+                    lines_count += 1;
+                }
+
+                let file_type = code_file_config
+                    .code_file_extensions
+                    .iter()
+                    .find(|ext| ext.extension == extension)
+                    .map(|ext| ext.file_type.clone())
+                    .unwrap_or_default();
+
+                file_stats
+                    .entry(extension.to_string())
+                    .or_insert_with(|| FileTypeStats::new(file_type))
+                    .accumulate_file(lines_count);
+            }
         }
     }
 
@@ -223,11 +217,6 @@ fn resolve_extensions(cli_extensions: Vec<String>, config: &CodeFileConfig) -> V
             .map(|ext| ext.extension.clone())
             .collect()
     }
-}
-
-fn build_extension_regex(extensions: &[String]) -> String {
-    let escaped: Vec<String> = extensions.iter().map(|e| regex::escape(e)).collect();
-    format!(".*\\.({})$", escaped.join("|"))
 }
 
 fn print_stats(stats: &HashMap<String, FileTypeStats>) {
