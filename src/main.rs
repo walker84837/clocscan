@@ -195,7 +195,13 @@ fn setup_logging(verbose: u8) -> LevelFilter {
         1 => LevelFilter::Warn,
         2 => LevelFilter::Info,
         3 => LevelFilter::Debug,
-        _ => LevelFilter::Debug,
+        _ => {
+            warn!(
+                "Verbosity level {} is higher than the maximum (3). Defaulting to Debug.",
+                verbose
+            );
+            LevelFilter::Debug
+        }
     }
 }
 

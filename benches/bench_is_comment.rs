@@ -1,7 +1,7 @@
 use criterion::{Criterion, criterion_group};
 
+use clocscan::analyzer::{CommentMatchers, is_comment_or_empty};
 use clocscan::config::CommentPatterns;
-use clocscan::file_reading::is_comment_or_empty;
 
 pub fn is_comment_or_empty_benchmark(c: &mut Criterion) {
     let comment_patterns = CommentPatterns {
@@ -14,6 +14,7 @@ pub fn is_comment_or_empty_benchmark(c: &mut Criterion) {
         multi_line_start: vec!["/*".to_string()],
         multi_line_end: vec!["*/".to_string()],
     };
+    let matchers = CommentMatchers::new(comment_patterns);
 
     let test_cases = vec![
         "fn main() {",
@@ -32,7 +33,7 @@ pub fn is_comment_or_empty_benchmark(c: &mut Criterion) {
             for line in &test_cases {
                 let (_, new_state) = std::hint::black_box(is_comment_or_empty(
                     line,
-                    &comment_patterns,
+                    &matchers,
                     in_multiline,
                 ));
                 in_multiline = new_state;
