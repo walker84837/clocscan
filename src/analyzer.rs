@@ -72,20 +72,21 @@ pub fn is_comment_or_empty(
 /// `None` if no pattern matches.
 fn find_earliest_pattern<'a>(s: &'a str, patterns: &[String]) -> Option<(usize, &'a str)> {
     let mut earliest: Option<(usize, usize)> = None; // (pos, pattern_idx)
-    for (pi, pat) in patterns.iter().enumerate() {
+
+    for (pat_index, pat) in patterns.iter().enumerate() {
         if let Some(pos) = s.find(pat.as_str()) {
             match earliest {
                 Some((earliest_pos, _)) if pos < earliest_pos => {
-                    earliest = Some((pos, pi));
+                    earliest = Some((pos, pat_index));
                 }
                 None => {
-                    earliest = Some((pos, pi));
+                    earliest = Some((pos, pat_index));
                 }
                 _ => {}
             }
         }
     }
-    earliest.map(|(pos, pi)| (pos, &s[pos + patterns[pi].len()..]))
+    earliest.map(|(pos, pat_index)| (pos, &s[pos + patterns[pat_index].len()..]))
 }
 
 #[cfg(test)]
@@ -94,7 +95,7 @@ mod tests {
     use crate::config::CommentPatterns;
 
     /// Minimal comment patterns covering C-style, Python-style, and shell-style.
-    fn c_py_sh_patterns() -> CommentPatterns {
+    fn common_comment_patterns() -> CommentPatterns {
         CommentPatterns {
             single_line: vec!["//".into(), "#".into(), ";".into()],
             multi_line_start: vec!["/*".into()],
@@ -115,7 +116,7 @@ mod tests {
 
     #[test]
     fn empty_line() {
-        let p = c_py_sh_patterns();
+        let p = common_comment_patterns();
         let m = false;
         assert!(is_comment_or_empty("", &p, m).0);
         assert!(is_comment_or_empty("   ", &p, m).0);
@@ -123,7 +124,7 @@ mod tests {
 
     #[test]
     fn single_line_comment() {
-        let p = c_py_sh_patterns();
+        let p = common_comment_patterns();
         let m = false;
         assert!(is_comment_or_empty("// comment", &p, m).0);
         assert!(is_comment_or_empty("  // indented", &p, m).0);
@@ -133,7 +134,7 @@ mod tests {
 
     #[test]
     fn code_line() {
-        let p = c_py_sh_patterns();
+        let p = common_comment_patterns();
         let m = false;
         assert!(!is_comment_or_empty("fn main() {}", &p, m).0);
         assert!(!is_comment_or_empty("let x = 5;", &p, m).0);
@@ -144,7 +145,7 @@ mod tests {
 
     #[test]
     fn code_with_trailing_comment() {
-        let p = c_py_sh_patterns();
+        let p = common_comment_patterns();
         let m = false;
         assert!(!is_comment_or_empty("let x = 5; // explain", &p, m).0);
         assert!(!is_comment_or_empty("x = 1 + 2  # inline", &p, m).0);
@@ -154,7 +155,7 @@ mod tests {
 
     #[test]
     fn multiline_block_opens_and_closes() {
-        let p = c_py_sh_patterns();
+        let p = common_comment_patterns();
         let m = false;
         let (r, m) = is_comment_or_empty("/* comment */", &p, m);
         assert!(r);
@@ -163,7 +164,7 @@ mod tests {
 
     #[test]
     fn multiline_spanning_several_lines() {
-        let p = c_py_sh_patterns();
+        let p = common_comment_patterns();
         let m = false;
 
         let (r, m) = is_comment_or_empty("/* open", &p, m);
@@ -179,7 +180,7 @@ mod tests {
 
     #[test]
     fn code_before_multiline_start() {
-        let p = c_py_sh_patterns();
+        let p = common_comment_patterns();
         let m = false;
         let (r, m) = is_comment_or_empty("let x = 1; /* comment starts", &p, m);
         assert!(!r);
@@ -193,7 +194,7 @@ mod tests {
 
     #[test]
     fn code_after_multiline_on_same_line() {
-        let p = c_py_sh_patterns();
+        let p = common_comment_patterns();
         let m = false;
         let (r, m) = is_comment_or_empty("/* comment */ let x = 1;", &p, m);
         assert!(!r);
@@ -202,7 +203,7 @@ mod tests {
 
     #[test]
     fn mid_line_end_marker() {
-        let p = c_py_sh_patterns();
+        let p = common_comment_patterns();
         let m = false;
 
         let (r, m) = is_comment_or_empty("/* block", &p, m);
@@ -215,7 +216,7 @@ mod tests {
 
     #[test]
     fn mid_line_end_marker_with_code_after() {
-        let p = c_py_sh_patterns();
+        let p = common_comment_patterns();
         let m = false;
 
         let (r, m) = is_comment_or_empty("/* block", &p, m);
@@ -253,7 +254,7 @@ mod tests {
         assert!(!m);
     }
 
-    // ── find_earliest_pattern helper ───────────────────────────────
+    // find_earliest_pattern helper
 
     #[test]
     fn earliest_pattern_none() {

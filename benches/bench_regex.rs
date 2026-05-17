@@ -1,4 +1,4 @@
-use criterion::{criterion_group, Criterion};
+use criterion::{Criterion, criterion_group};
 use regex::Regex;
 
 pub fn regex_matching_benchmark(c: &mut Criterion) {

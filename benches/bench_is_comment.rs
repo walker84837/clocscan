@@ -1,4 +1,4 @@
-use criterion::{criterion_group, Criterion};
+use criterion::{Criterion, criterion_group};
 
 use clocscan::config::CommentPatterns;
 use clocscan::file_reading::is_comment_or_empty;

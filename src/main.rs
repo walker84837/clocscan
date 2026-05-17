@@ -1,12 +1,12 @@
 use crate::{
+    analyzer::{DEFAULT_CONFIG, is_comment_or_empty},
     config::CodeFileConfig,
-    file_reading::{is_comment_or_empty, DEFAULT_CONFIG},
 };
 use anyhow::{Context, Result};
 use async_walkdir::WalkDir;
 use clap::{ArgAction, Parser};
-use log::{debug, info, warn, LevelFilter};
-use prettytable::{row, Table};
+use log::{LevelFilter, debug, info, warn};
+use prettytable::{Table, row};
 use regex::Regex;
 use simple_logger::SimpleLogger;
 use tokio::{
@@ -14,8 +14,8 @@ use tokio::{
     io::{AsyncBufReadExt, BufReader},
 };
 
+mod analyzer;
 mod config;
-mod file_reading;
 
 use std::{collections::HashMap, path::PathBuf};
 
@@ -62,6 +62,14 @@ struct Cli {
 
     #[arg(long = "sloc-only")]
     sloc_only: bool,
+}
+
+#[inline]
+async fn load_config(path: &str) -> Result<String> {
+    let content = fs::read_to_string(path)
+        .await
+        .with_context(|| format!("Config file {path:?} not found or unreadable"))?;
+    Ok(content)
 }
 
 #[tokio::main]
@@ -220,13 +228,6 @@ fn resolve_extensions(cli_extensions: Vec<String>, config: &CodeFileConfig) -> V
 fn build_extension_regex(extensions: &[String]) -> String {
     let escaped: Vec<String> = extensions.iter().map(|e| regex::escape(e)).collect();
     format!(".*\\.({})$", escaped.join("|"))
-}
-
-async fn load_config(path: &str) -> Result<String> {
-    let content = fs::read_to_string(path)
-        .await
-        .with_context(|| format!("Config file {path:?} not found or unreadable"))?;
-    Ok(content)
 }
 
 fn print_stats(stats: &HashMap<String, FileTypeStats>) {

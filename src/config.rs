@@ -19,7 +19,7 @@ impl Default for CodeFileConfig {
     fn default() -> Self {
         // SAFETY: DEFAULT_CONFIG is embedded at compile time via include_str!
         // and verified to be valid JSON; a panic here is a programming error.
-        serde_json::from_str(crate::file_reading::DEFAULT_CONFIG)
+        serde_json::from_str(crate::analyzer::DEFAULT_CONFIG)
             .expect("embedded DEFAULT_CONFIG (sample.json) is not valid JSON")
     }
 }
