@@ -39,12 +39,12 @@ These are the other options in case you need fine-grained outputs:
 
 As a benchmark, I put it up against [commit 8bb886cb8](https://github.com/torvalds/linux/commit/8bb886cb8f3a2811430ddb7d9838e245c57e7f7c) of the Linux kernel.
 
-I ran this test on an AMD Ryzen 5 7600, Samsung 990 PRO M.2 SSD with 32 GB of RAM. With that out of the way, here's the results:
+I ran this test on an AMD Ryzen 5 7600, Samsung 990 PRO M.2 SSD with 32 GB of RAM, and compiled it with release mode (optimizations enabled). With that out of the way, here's the results:
 
 | Command | Mean [s] | Min [s] | Max [s] | Relative |
 |:---|---:|---:|---:|---:|
-| `./target/release/clocscan linux/` | 5.513 ± 0.021 | 5.476 | 5.538 | 1.00 |
-| `cloc linux/` | 78.272 ± 0.832 | 77.115 | 80.084 | 14.20 ± 0.16 |
+| `./target/release/clocscan linux/` | 7.636 ± 0.080 | 7.481 | 7.785 | 1.00 |
+| `cloc linux/` | 79.870 ± 0.777 | 78.998 | 81.051 | 10.46 ± 0.15 |
 
 These benchmarks were run using `hyperfine`[^1] for more accurate results. `clocscan` uses asynchronous directory traversal, which uses multiple CPU cores, making it significantly faster performance compared to [`cloc`](https://github.com/AlDanial/cloc), but this could be improved further.
 
