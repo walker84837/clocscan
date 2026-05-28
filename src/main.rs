@@ -17,13 +17,14 @@ mod analyzer;
 mod config;
 
 use std::{
+    cmp::Reverse,
     collections::{HashMap, HashSet},
     path::PathBuf,
 };
 
 use futures::stream::StreamExt;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord)]
 struct FileTypeStats {
     file_type: String,
     file_count: usize,
@@ -236,6 +237,9 @@ fn print_stats(stats: &HashMap<String, FileTypeStats>) {
 
     let mut total_files = 0;
     let mut total_lines = 0;
+
+    let mut stats: Vec<(&String, &FileTypeStats)> = stats.into_iter().collect();
+    stats.sort_unstable_by_key(|(_, stats)| Reverse(stats.total_sloc));
 
     for (ext, file_stats) in stats {
         table.add_row(row![
