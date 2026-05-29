@@ -238,7 +238,7 @@ fn print_stats(stats: &HashMap<String, FileTypeStats>) {
     let mut total_files = 0;
     let mut total_lines = 0;
 
-    let mut stats: Vec<(&String, &FileTypeStats)> = stats.into_iter().collect();
+    let mut stats: Vec<(&String, &FileTypeStats)> = stats.iter().collect();
     stats.sort_unstable_by_key(|(_, stats)| Reverse(stats.total_sloc));
 
     for (ext, file_stats) in stats {
